@@ -2,15 +2,12 @@
 use strict;
 use warnings;
 
-use lib q{/www/modules/};
-use lib q{www/modules/};
 use GD;
 use GD::Image;
 use Time::HiRes;
 use Time::Stopwatch;
 use Getopt::Long;
 use Data::Dumper;
-use Term::ProgressBar 2.00;
 
 use constant RIGHT => 0;
 use constant DOWN => 1;
@@ -32,10 +29,6 @@ GetOptions("f=s" => \$filename,
     "r" => \$rainbow) or die("Error in arguments\n");
 
 #stats
-my $prog = 1;
-my $progress = Term::ProgressBar->new( { count => 0, silent => $prog } );
-$progress->minor(0);
-my $next_update = 0;
 my $totalFrames = 0;
 tie my $time, 'Time::Stopwatch';
 
@@ -93,12 +86,9 @@ if(defined($filename)) {
     }
 }
 
-if($t > 0) {
-    $progress = Term::ProgressBar->new( { count => scalar @$pos, silent => 0 } ) if(scalar @$pos > 0);
-}
+
 for (0..$t) {
     push @$pos, {x => int(rand($xSize)), y => int(rand($ySize)), option => (int(rand(4)) == 1 ? 'm' : '')};
-
 }
 
 my $count = 0;
