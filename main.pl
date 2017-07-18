@@ -15,18 +15,20 @@ use constant LEFT => 2;
 use constant UP => 3;
 
 #Console Params
-my $filename;
-my $d = undef;
+my $filename = undef;
+my $frameCnt = undef;
 my $ySize = 500;
 my $xSize = 500;
-my $t = -1;
+my $randomCnt = -1;
 my $rainbow;
+my $slurp;
 GetOptions("f=s" => \$filename,
-    "d=s" => \$d,
     "x=s" => \$xSize,
     "y=s" => \$ySize,
-    "t=s" => \$t,
-    "r" => \$rainbow) or die("Error in arguments\n");
+    "random=s" => \$randomCnt,
+    "frame=s" => \$frameCnt,
+    "r" => \$rainbow,
+    "slurp" => \$slurp) or die("Error in arguments\n");
 
 #stats
 my $totalFrames = 0;
@@ -37,14 +39,13 @@ my $x = -1;
 my $y = -1;
 
 #logic
-my $lastDir = -1;
 my $drawNextFrame = 0;
 my $colorPalette = [] if($rainbow);
 my $maxColor = int(rand(10))+10 if($rainbow);
 my $offSetX = 0;
 my $offSetY = 0;
 
-
+#Rainbow setup
 if($rainbow) {
     for (0..$maxColor) {
         push @$colorPalette, int(rand(5))+2;
@@ -52,25 +53,35 @@ if($rainbow) {
 }
 
 # create a new image
-my $im = new GD::Image($xSize, $ySize);
-my ($width,$height) = $im->getBounds();
+my $frame = new GD::Image($xSize, $ySize);
 
-$im->colorAllocate(0,0,0);
-my $r = $im->colorAllocate(255,0,0);
-my $g = $im->colorAllocate(0,255,0);
-my $b = $im->colorAllocate(0,0,255);
-
-my $gifdata = $im->gifanimbegin(1,-1);
-my $frame  = $im->clone();
-
+#Allocating Colors
 $frame->colorAllocate(0,0,0);
-$frame->colorAllocate(255,0,0);
-$frame->colorAllocate(0,255,0);
-$frame->colorAllocate(0,0,255);
+my $r = $frame->colorAllocate(255,0,0);
+my $g = $frame->colorAllocate(0,255,0);
+my $b = $frame->colorAllocate(0,0,255);
 
+#Begin Animation
+my $gifdata = $frame->gifanimbegin(1,-1);
 
+#Read Positions from Allfiles in 'sketch'
 my $pos = [];
+if(defined($slurp)) {
+    $filename = "";
+    my $first = undef;
+    my $directory = './sketch';
+    opendir (DIR, $directory) or die $!;
+    while (my $file = readdir(DIR)) {
+        next if ($file =~ m/^\./);
 
+        $filename = $file unless(defined($first));
+        $filename .= ", ".$file if(defined($first));
+        $first = 1;
+    }
+    closedir(DIR);
+}
+
+#Read Positions from File
 if(defined($filename)) {
     foreach my $file (split(/ *, */, $filename)) {
         open(my $fh, '<:encoding(UTF-8)', './sketch/'.$file)
@@ -79,18 +90,21 @@ if(defined($filename)) {
         while (my $row = <$fh>) {
             chomp $row;
             $row =~ /(#?) *([a-z]*) *(-*\d+)\s*(-*\d+)/;
+
             next if(defined($1) && $1 eq '#');
             next unless(defined($1) && defined($2) && defined($3) && defined($4));
+
             push @$pos, {option => $2, x => $3, y => $4};
         }
     }
 }
 
-
-for (0..$t) {
+#
+for (0..$randomCnt) {
     push @$pos, {x => int(rand($xSize)), y => int(rand($ySize)), option => (int(rand(4)) == 1 ? 'm' : '')};
 }
 
+#Loop through all Position and Draw
 my $count = 0;
 foreach my $x (@$pos) {
     moveTo(pos => $x, draw => 0);
@@ -102,10 +116,11 @@ foreach my $x (@$pos) {
 print "Toke $time seconds for $totalFrames frames\n";
 print "Total run Time is ", ($totalFrames*20)/1000, " sec\n";
 
+#Finish up the animation
 $gifdata .= $frame->gifanimadd(0, 0, 0, 2);
 $gifdata .= $frame->gifanimend;
 
-
+#Save to file
 open my $file, '>', './out/out.gif';
 binmode $file;
 print $file $gifdata;
@@ -114,6 +129,7 @@ close $file;
 open $file, '>', './out/prev.png';
 binmode $file;
 print $file $frame->png();
+close $file;
 
 sub move {
     my %params  = (
@@ -195,7 +211,7 @@ sub draw {
         $frame->setPixel($x, $y, $params{color});
     }
 
-    if((defined($params{cycle}) && defined($d) && $params{cycle} % $d == 0 ) || defined($drawNextFrame)) {
+    if((defined($params{cycle}) && defined($frameCnt) && $params{cycle} % $frameCnt == 0 ) || defined($drawNextFrame)) {
         $gifdata .= $frame->gifanimadd(0, 0, 0, 2);
         $totalFrames++;
         $drawNextFrame = undef;
