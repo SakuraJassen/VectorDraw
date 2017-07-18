@@ -39,7 +39,6 @@ my $x = -1;
 my $y = -1;
 
 #logic
-my $drawNextFrame = 0;
 my $colorPalette = [] if($rainbow);
 my $maxColor = int(rand(10))+10 if($rainbow);
 my $offSetX = 0;
@@ -67,18 +66,7 @@ my $gifdata = $frame->gifanimbegin(1,-1);
 #Read Positions from Allfiles in 'sketch'
 my $pos = [];
 if(defined($slurp)) {
-    $filename = "";
-    my $first = undef;
-    my $directory = './sketch';
-    opendir (DIR, $directory) or die $!;
-    while (my $file = readdir(DIR)) {
-        next if ($file =~ m/^\./);
-
-        $filename = $file unless(defined($first));
-        $filename .= ", ".$file if(defined($first));
-        $first = 1;
-    }
-    closedir(DIR);
+    $filename = readDir();
 }
 
 #Read Positions from File
@@ -86,15 +74,18 @@ if(defined($filename)) {
     foreach my $file (split(/ *, */, $filename)) {
         open(my $fh, '<:encoding(UTF-8)', './sketch/'.$file)
         or die "Could not open file '$file' $!";
-
+        my $moveToNext = undef;
         while (my $row = <$fh>) {
             chomp $row;
-            $row =~ /(#?) *([a-z]*) *(-*\d+)\s*(-*\d+)/;
+            while($row =~ s/(#?)(\d+) *(\d+) *((?:=>)?)//){
+                next if(defined($1) && $1 eq '#');
+                next unless(defined($1) || defined($2) || defined($3) || defined($4));
 
-            next if(defined($1) && $1 eq '#');
-            next unless(defined($1) && defined($2) && defined($3) && defined($4));
+                push @$pos, {option => defined($moveToNext) ? '' : 'm', x => $2, y => $3};
 
-            push @$pos, {option => $2, x => $3, y => $4};
+                $moveToNext = undef;
+                $moveToNext = 1 if($4 eq '=>');
+            }
         }
     }
 }
@@ -207,9 +198,31 @@ sub draw {
         $frame->setPixel($x, $y, $params{color});
     }
 
-    if((defined($params{cycle}) && defined($frameCnt) && $params{cycle} % $frameCnt == 0 ) || defined($drawNextFrame)) {
+    if((defined($params{cycle}) && defined($frameCnt) && $params{cycle} % $frameCnt == 0 )) {
         $gifdata .= $frame->gifanimadd(0, 0, 0, 2);
         $totalFrames++;
-        $drawNextFrame = undef;
     }
+}
+
+sub readDir {
+     my %params  = (
+        dir => 'sketch',
+        @_
+    );
+
+    my $filename = "";
+    my $first = undef;
+    my $directory = './'.$params{dir};
+
+    opendir (DIR, $directory) or die $!;
+    while (my $file = readdir(DIR)) {
+        next if ($file =~ m/^\./);
+
+        $filename = $file unless(defined($first));
+        $filename .= ", ".$file if(defined($first));
+        $first = 1;
+    }
+    closedir(DIR);
+
+    return $filename;
 }
