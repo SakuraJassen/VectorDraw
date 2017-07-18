@@ -17,14 +17,14 @@ use constant UP => 3;
 #Console Params
 my $filename = undef;
 my $frameCnt = undef;
-my $ySize = 500;
-my $xSize = 500;
+my $height = 500;
+my $width = 500;
 my $randomCnt = -1;
 my $rainbow;
 my $slurp;
 GetOptions("f=s" => \$filename,
-    "x=s" => \$xSize,
-    "y=s" => \$ySize,
+    "w=s" => \$width,
+    "h=s" => \$height,
     "random=s" => \$randomCnt,
     "frame=s" => \$frameCnt,
     "r" => \$rainbow,
@@ -53,7 +53,7 @@ if($rainbow) {
 }
 
 # create a new image
-my $frame = new GD::Image($xSize, $ySize);
+my $frame = new GD::Image($width, $height);
 
 #Allocating Colors
 $frame->colorAllocate(0,0,0);
@@ -101,7 +101,7 @@ if(defined($filename)) {
 
 #
 for (0..$randomCnt) {
-    push @$pos, {x => int(rand($xSize)), y => int(rand($ySize)), option => (int(rand(4)) == 1 ? 'm' : '')};
+    push @$pos, {x => int(rand($width)), y => int(rand($height)), option => (int(rand(4)) == 1 ? 'm' : '')};
 }
 
 #Loop through all Position and Draw
@@ -140,19 +140,15 @@ sub move {
     if($params{dir} == 0){
         # RIGHT => 0;
         $x++;
-        #$x = 0 if($x > $xSize);
     } elsif ($params{dir} == 1) {
         # DOWN => 1;
         $y++;
-        #$y = 0 if($y > $ySize);
     } elsif ($params{dir} == 2) {
         # LEFT => 2;
         $x--;
-        #$x = $xSize if($x < 0);
     } elsif ($params{dir} == 3) {
         # UP => 3;
         $y--;
-        #$y = $ySize if($y < 0);
     }
 }
 
