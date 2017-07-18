@@ -91,9 +91,9 @@ if(defined($filename)) {
 }
 
 #
-#for (0..$randomCnt) {
-#    push @$pos, {x => int(rand($width)), y => int(rand($height)), option => (int(rand(4)) == 1 ? 'm' : '')};
-#}
+for (0..$randomCnt) {
+    push @$pos, {x => int(rand($width)), y => int(rand($height)), option => (int(rand(4)) == 1 ? 'm' : '')};
+}
 
 #Loop through all Position and Draw
 my $count = 0;
