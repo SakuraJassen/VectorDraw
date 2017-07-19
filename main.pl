@@ -20,6 +20,7 @@ my $frameCnt = undef;
 my $height = 500;
 my $width = 500;
 my $randomCnt = -1;
+my $marker = 0;
 my $rainbow;
 my $slurp;
 GetOptions("f=s" => \$filename,
@@ -27,6 +28,7 @@ GetOptions("f=s" => \$filename,
     "h=s" => \$height,
     "random=s" => \$randomCnt,
     "frame=s" => \$frameCnt,
+    "mark=s" => \$marker,
     "r" => \$rainbow,
     "slurp" => \$slurp) or die("Error in arguments\n");
 
@@ -98,7 +100,8 @@ for (0..$randomCnt) {
 #Loop through all Position and Draw
 my $count = 0;
 foreach my $x (@$pos) {
-    moveTo(pos => $x, draw => 0);
+    next unless (defined($x));
+    moveTo(pos => $x, draw => 0, marker => 1);
     $gifdata .= $frame->gifanimadd(0, 0, 0, 2);
     $totalFrames++;
     $count++;
@@ -147,6 +150,7 @@ sub moveTo {
     my %params  = (
         pos => undef,
         draw => undef,
+        marker => undef,
         @_
     );
     my $cycle = 0;
@@ -165,9 +169,9 @@ sub moveTo {
 
     $params{pos}->{x} += $offSetX;
     $params{pos}->{y} += $offSetY;
-    $frame->setPixel($params{pos}->{x}, $params{pos}->{y}, $r) if defined($params{draw}); # goal
+    draw(x => $params{pos}->{x}, y => $params{pos}->{y}, color => $r, size => $marker) if defined($params{draw}); # goal
 
-    while ($params{pos}->{x} != $x || $params{pos}->{y} != $y) {
+    while (($params{pos}->{x} != $x || $params{pos}->{y} != $y)) {
         $cycle++;
         draw(cycle => $cycle) if (defined($params{draw}));
         if ($params{pos}->{x} < $x && defined($params{pos}->{x})) {
@@ -189,13 +193,26 @@ sub draw {
     my %params  = (
         cycle => undef,
         color => $g,
+        size => 0,
+        x => undef,
+        y => undef,
         @_
     );
+    my $localX = $x;
+    my $localY = $y;
+
+    $localX = $params{x} if(defined($params{x}));
+    $localY = $params{y} if(defined($params{y}));
 
     if($rainbow){
-        $frame->setPixel($x, $y, $colorPalette->[($params{cycle}+int(rand(4))) % $maxColor]/2);
+        $frame->setPixel($localX, $localY, $colorPalette->[($params{cycle}+int(rand(4))) % $maxColor]/2);
     }else{
-        $frame->setPixel($x, $y, $params{color});
+        my $size = $params{size};
+        for (my $i = -$size; $i < $size+1; $i++) {
+            for (my $j = -$size; $j < $size+1; $j++) {
+                $frame->setPixel($localX+$i, $localY+$j, $params{color});
+            }
+        }
     }
 
     if((defined($params{cycle}) && defined($frameCnt) && $params{cycle} % $frameCnt == 0 )) {
