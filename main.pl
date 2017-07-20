@@ -161,6 +161,8 @@ sub moveTo {
         return;
     }
 
+    draw(x => $params{pos}->{x}, y => $params{pos}->{y}, color => $r, size => $marker) if defined($params{draw}); # goal
+
     if($x == -1 && $y == -1 || $params{pos}->{option} eq 'm') {
         $x = $params{pos}->{x};
         $y = $params{pos}->{y};
@@ -169,8 +171,6 @@ sub moveTo {
 
     $params{pos}->{x} += $offSetX;
     $params{pos}->{y} += $offSetY;
-    draw(x => $params{pos}->{x}, y => $params{pos}->{y}, color => $r, size => $marker) if defined($params{draw}); # goal
-
     while (($params{pos}->{x} != $x || $params{pos}->{y} != $y)) {
         $cycle++;
         draw(cycle => $cycle) if (defined($params{draw}));
@@ -191,7 +191,7 @@ sub moveTo {
 
 sub draw {
     my %params  = (
-        cycle => undef,
+        cycle => $maxColor,
         color => $g,
         size => 0,
         x => undef,
