@@ -66,7 +66,7 @@ my $b = $frame->colorAllocate(0,0,255);
 my $gifdata = $frame->gifanimbegin(1,-1);
 
 #Read Positions from Allfiles in 'sketch'
-my $pos = [];
+my $points = [];
 if(defined($slurp)) {
     $filename = readDir();
 }
@@ -83,7 +83,7 @@ if(defined($filename)) {
                 next if(defined($1) && $1 eq '#');
                 next unless(defined($1) || defined($2) || defined($3) || defined($4));
 
-                push @$pos, {option => defined($moveToNext) ? '' : 'm', x => $2, y => $3};
+                push @$points, {option => defined($moveToNext) ? '' : 'm', pos => {x => $2, y => $3}};
 
                 $moveToNext = undef;
                 $moveToNext = 1 if($4 eq '=>');
@@ -94,14 +94,14 @@ if(defined($filename)) {
 
 #
 for (0..$randomCnt) {
-    push @$pos, {x => int(rand($width)), y => int(rand($height)), option => (int(rand(4)) == 1 ? 'm' : '')};
+    push @$points, {x => int(rand($width)), y => int(rand($height)), option => (int(rand(4)) == 1 ? 'm' : '')};
 }
 
 #Loop through all Position and Draw
 my $count = 0;
-foreach my $x (@$pos) {
+foreach my $x (@$points) {
     next unless (defined($x));
-    moveTo(pos => $x, draw => 0, marker => 1);
+    moveTo(point => $x, draw => 0, marker => 1);
     $gifdata .= $frame->gifanimadd(0, 0, 0, 2);
     $totalFrames++;
     $count++;
@@ -148,40 +148,40 @@ sub move {
 
 sub moveTo {
     my %params  = (
-        pos => undef,
+        point => undef,
         draw => undef,
         marker => undef,
         @_
     );
     my $cycle = 0;
 
-    if($params{pos}->{option} eq 'os') {
-        $offSetX = $params{pos}->{x};
-        $offSetY = $params{pos}->{y};
+    if($params{point}->{option} eq 'os') {
+        $offSetX = $params{point}->{pos}->{x};
+        $offSetY = $params{point}->{pos}->{y};
         return;
     }
 
-    draw(x => $params{pos}->{x}, y => $params{pos}->{y}, color => $r, size => $marker) if defined($params{draw}); # goal
+    draw(x => $params{point}->{pos}->{x}, y => $params{point}->{pos}->{y}, color => $r, size => $marker) if defined($params{draw}); # goal
 
-    if($x == -1 && $y == -1 || $params{pos}->{option} eq 'm') {
-        $x = $params{pos}->{x};
-        $y = $params{pos}->{y};
+    if($x == -1 && $y == -1 || $params{point}->{option} eq 'm') {
+        $x = $params{point}->{pos}->{x};
+        $y = $params{point}->{pos}->{y};
         return;
     }
 
-    $params{pos}->{x} += $offSetX;
-    $params{pos}->{y} += $offSetY;
-    while (($params{pos}->{x} != $x || $params{pos}->{y} != $y)) {
+    $params{point}->{pos}->{x} += $offSetX;
+    $params{point}->{pos}->{y} += $offSetY;
+    while (($params{point}->{pos}->{x} != $x || $params{point}->{pos}->{y} != $y)) {
         $cycle++;
         draw(cycle => $cycle) if (defined($params{draw}));
-        if ($params{pos}->{x} < $x && defined($params{pos}->{x})) {
+        if ($params{point}->{pos}->{x} < $x && defined($params{point}->{pos}->{x})) {
             move(dir => LEFT);
-        } elsif ($params{pos}->{x} > $x && defined($params{pos}->{x})) {
+        } elsif ($params{point}->{pos}->{x} > $x && defined($params{point}->{pos}->{x})) {
             move(dir => RIGHT);
         }
-        if ($params{pos}->{y} < $y && defined($params{pos}->{y})) {
+        if ($params{point}->{pos}->{y} < $y && defined($params{point}->{pos}->{y})) {
             move(dir => UP);
-        } elsif ($params{pos}->{y} > $y && defined($params{pos}->{y})) {
+        } elsif ($params{point}->{pos}->{y} > $y && defined($params{point}->{pos}->{y})) {
             move(dir => DOWN);
         }
         draw(cycle => $cycle, color => $b) if (defined($params{draw}));
@@ -234,6 +234,7 @@ sub readDir {
     opendir (DIR, $directory) or die $!;
     while (my $file = readdir(DIR)) {
         next if ($file =~ m/^\./);
+        next if ($file =~ m/(ignore\.)/);
 
         $filename = $file unless(defined($first));
         $filename .= ", ".$file if(defined($first));
