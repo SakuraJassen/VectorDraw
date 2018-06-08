@@ -32,6 +32,8 @@ GetOptions("f=s" => \$filename,
     "r" => \$rainbow,
     "slurp" => \$slurp) or die("Error in arguments\n");
 
+die("Neither random nor a Filename was specified!") if($randomCnt == -1 && !defined($filename) && !$slurp);
+
 #stats
 my $totalFrames = 0;
 tie my $time, 'Time::Stopwatch';
@@ -94,7 +96,7 @@ if(defined($filename)) {
 
 #
 for (0..$randomCnt) {
-    push @$points, {x => int(rand($width)), y => int(rand($height)), option => (int(rand(4)) == 1 ? 'm' : '')};
+    push @$points, {pos => {x => int(rand($width)), y => int(rand($height))}, option => (int(rand(4)) == 1 ? 'm' : '')};
 }
 
 #Loop through all Position and Draw
